@@ -208,82 +208,84 @@
     /* ─── Controls bar (bottom center) ──────────────────────── */
     #controls {
       position: absolute;
-      bottom: 28px;
+      bottom: 16px;
       left: 50%;
       transform: translateX(-50%);
       pointer-events: all;
       background: var(--glass);
       border: 1px solid var(--glass-border);
-      backdrop-filter: blur(24px) saturate(1.2);
-      -webkit-backdrop-filter: blur(24px) saturate(1.2);
-      border-radius: 16px;
-      padding: 18px 28px;
+      backdrop-filter: blur(20px) saturate(1.2);
+      -webkit-backdrop-filter: blur(20px) saturate(1.2);
+      border-radius: 14px;
+      padding: 7px 10px;
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 2px;
       white-space: nowrap;
-    }
-
-    .ctrl-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .ctrl-label {
-      font-size: 8.5px;
-      letter-spacing: 0.17em;
-      text-transform: uppercase;
-      color: var(--muted);
+      max-width: calc(100vw - 32px);
     }
 
     .ctrl-input {
-      background: rgba(255,255,255,0.055);
-      border: 1px solid var(--glass-border);
-      border-radius: 8px;
+      background: transparent;
+      border: none;
+      border-radius: 7px;
       color: var(--text);
       font-family: 'DM Mono', monospace;
-      font-size: 13px;
-      padding: 7px 12px;
+      font-size: 12px;
+      padding: 6px 6px;
       outline: none;
       cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
+      transition: background 0.15s;
       color-scheme: dark;
+      /* clamp width so time/date don't over-expand */
+      min-width: 0;
     }
+    #inp-date  { width: 120px; }
+    #inp-time  { width: 78px; }
 
-    .ctrl-input:hover { border-color: rgba(255,255,255,0.16); background: rgba(255,255,255,0.085); }
-    .ctrl-input:focus { border-color: rgba(255,255,255,0.22); }
+    .ctrl-input:hover  { background: rgba(255,255,255,0.07); }
+    .ctrl-input:focus  { background: rgba(255,255,255,0.09); }
 
     .vr {
       width: 1px;
-      height: 44px;
-      background: var(--glass-border);
+      height: 20px;
+      background: rgba(255,255,255,0.1);
       flex-shrink: 0;
+      margin: 0 3px;
     }
 
-    #locate-btn {
-      pointer-events: all;
-      background: rgba(255,255,255,0.055);
-      border: 1px solid var(--glass-border);
-      border-radius: 8px;
-      color: var(--text);
+    /* shared pill-button style for all bar icon-buttons */
+    .bar-btn {
+      background: transparent;
+      border: none;
+      border-radius: 7px;
+      color: var(--muted);
       font-family: 'DM Mono', monospace;
       font-size: 11px;
-      letter-spacing: 0.05em;
-      padding: 8px 14px;
+      letter-spacing: 0.03em;
+      padding: 6px 8px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: background 0.15s, color 0.15s;
       display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 5px;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
+    .bar-btn:hover         { background: rgba(255,255,255,0.07); color: var(--text); }
+    .bar-btn.active        { color: #c8d8ff; background: rgba(180,180,255,0.09); }
 
-    #locate-btn:hover {
-      background: rgba(255,255,255,0.1);
-      border-color: rgba(255,255,255,0.18);
-    }
-
+    #locate-btn { color: var(--muted); }
     #locate-btn svg { flex-shrink: 0; }
+
+    #shadow-btn .btn-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.5;
+      flex-shrink: 0;
+    }
+    #shadow-btn.active .btn-dot { opacity: 1; }
 
     /* ─── Sun ray canvas overlay ─────────────────────────── */
     #ray-canvas {
@@ -545,6 +547,7 @@
       display: flex;
       align-items: center;
       pointer-events: all;
+      flex-shrink: 0;
     }
 
     #search-toggle {
@@ -552,28 +555,49 @@
       border: none;
       border-radius: 7px;
       color: var(--muted);
-      padding: 5px 8px;
+      padding: 6px 9px;
       cursor: pointer;
       display: flex;
       align-items: center;
       transition: background 0.15s, color 0.15s;
+      /* make tap target comfortable */
+      min-width: 36px;
+      justify-content: center;
     }
     #search-toggle:hover, #search-wrap.open #search-toggle {
       background: rgba(255,255,255,0.07);
       color: var(--text);
     }
 
-    #search-inner {
+    /* When open, a floating panel appears above — centered on the bar */
+    #search-popup {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 280px;
+      background: rgba(8, 8, 12, 0.97);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 13px;
+      overflow: hidden;
+      z-index: 100;
+      animation: popUp 0.18s ease;
+    }
+    @keyframes popUp {
+      from { opacity: 0; transform: translateX(-50%) translateY(6px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    #search-wrap.open #search-popup { display: block; }
+
+    #search-input-row {
       display: flex;
       align-items: center;
-      width: 0;
-      overflow: hidden;
-      transition: width 0.25s cubic-bezier(0.4,0,0.2,1);
+      padding: 0 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      gap: 8px;
     }
-
-    #search-wrap.open #search-inner {
-      width: 210px;
-    }
+    #search-input-row svg { flex-shrink: 0; opacity: 0.4; }
 
     #search-inp {
       flex: 1;
@@ -583,11 +607,10 @@
       color: var(--text);
       font-family: 'DM Mono', monospace;
       font-size: 12px;
-      padding: 5px 4px;
+      padding: 11px 0;
       min-width: 0;
       letter-spacing: 0.02em;
     }
-
     #search-inp::placeholder { color: var(--muted); }
 
     #search-clear {
@@ -595,26 +618,15 @@
       border: none;
       color: var(--muted);
       cursor: pointer;
-      padding: 2px 4px;
+      padding: 3px 4px;
       display: none;
       line-height: 1;
-      font-size: 14px;
+      font-size: 15px;
       flex-shrink: 0;
     }
     #search-clear:hover { color: var(--text); }
 
-    #search-results {
-      display: none;
-      position: absolute;
-      bottom: calc(100% + 10px);
-      right: 0;
-      width: 280px;
-      background: rgba(8, 8, 12, 0.97);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 11px;
-      overflow: hidden;
-      z-index: 100;
-    }
+    #search-results { /* inside popup, no positioning needed */ }
 
     .sr-item {
       padding: 9px 13px;
@@ -633,7 +645,6 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-
     .sr-detail {
       font-size: 9.5px;
       color: var(--muted);
@@ -641,7 +652,6 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-
     .sr-empty {
       padding: 11px 13px;
       font-size: 11px;
@@ -657,9 +667,7 @@
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
       flex-shrink: 0;
-      margin-right: 4px;
     }
-
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ─── Mobile solar drawer ─────────────────────────────── */
@@ -723,13 +731,17 @@
 
     /* ─── Responsive ─────────────────────────────────────── */
     @media (max-width: 600px) {
-      #controls { gap: 2px; padding: 6px 8px; }
+      #controls { gap: 1px; padding: 6px 8px; bottom: 12px; }
       .vr { display: none; }
       #solar-panel { display: none !important; }
-      #light-times { display: none !important; }
       #compass-wrap { display: none; }
       #mobile-solar-btn { display: flex !important; }
-      #search-wrap.open #search-inner { width: 150px; }
+      /* keep search popup full-width on mobile */
+      #search-popup { width: calc(100vw - 40px); left: auto; right: 0; transform: none; }
+      @keyframes popUp {
+        from { opacity: 0; transform: translateY(6px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
     }
   </style>
 </head>
@@ -777,8 +789,23 @@
       <span class="solar-val" id="v-sunset">—</span>
     </div>
     <div class="solar-row">
-      <span class="solar-key">Golden Hr</span>
-      <span class="solar-val" id="v-golden">—</span>
+      <span class="solar-key">Morning ✦</span>
+      <span class="solar-val" id="lt-golden-morn">—</span>
+    </div>
+    <div class="solar-row">
+      <span class="solar-key">Evening ✦</span>
+      <span class="solar-val" id="lt-golden-eve">—</span>
+    </div>
+    <div id="day-arc-wrap">
+      <div id="day-arc-label">Daylight Span</div>
+      <div id="day-arc-bar">
+        <div class="arc-seg" id="arc-blue-morn"  style="background:rgba(91,159,245,0.55)"></div>
+        <div class="arc-seg" id="arc-golden-morn" style="background:rgba(232,160,32,0.75)"></div>
+        <div class="arc-seg" id="arc-day"         style="background:rgba(255,245,200,0.2)"></div>
+        <div class="arc-seg" id="arc-golden-eve"  style="background:rgba(232,160,32,0.75)"></div>
+        <div class="arc-seg" id="arc-blue-eve"    style="background:rgba(91,159,245,0.55)"></div>
+        <div id="arc-cursor"></div>
+      </div>
     </div>
   </div>
 
@@ -823,6 +850,17 @@
       <span class="solar-key">Evening ✦</span>
       <span class="solar-val" id="mv-golden-eve">—</span>
     </div>
+    <div id="day-arc-wrap-m" style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06)">
+      <div style="font-size:8px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:7px">Daylight Span</div>
+      <div style="position:relative;height:8px;border-radius:4px;background:rgba(255,255,255,0.05);overflow:visible">
+        <div class="arc-seg" id="arc-blue-morn-m"  style="background:rgba(91,159,245,0.55)"></div>
+        <div class="arc-seg" id="arc-golden-morn-m" style="background:rgba(232,160,32,0.75)"></div>
+        <div class="arc-seg" id="arc-day-m"         style="background:rgba(255,245,200,0.2)"></div>
+        <div class="arc-seg" id="arc-golden-eve-m"  style="background:rgba(232,160,32,0.75)"></div>
+        <div class="arc-seg" id="arc-blue-eve-m"    style="background:rgba(91,159,245,0.55)"></div>
+        <div id="arc-cursor-m" style="position:absolute;top:-4px;width:3px;height:16px;border-radius:2px;background:white;box-shadow:0 0 6px rgba(255,255,255,0.6);transform:translateX(-50%);transition:left 0.5s ease;z-index:2"></div>
+      </div>
+    </div>
   </div>
 
   <!-- Compass -->
@@ -831,62 +869,7 @@
     <div id="compass-hint">drag to rotate</div>
   </div>
 
-  <!-- Light Times Panel -->
-  <div id="light-times">
-    <div class="panel-label">Today's Light</div>
 
-    <div class="lt-row">
-      <div class="lt-swatch" style="background:rgba(255,170,80,0.12)">🌅</div>
-      <div class="lt-info">
-        <div class="lt-name">Sunrise</div>
-        <div class="lt-time" id="lt-sunrise">—</div>
-      </div>
-    </div>
-
-    <div class="lt-row">
-      <div class="lt-swatch" style="background:rgba(232,160,32,0.14)">✦</div>
-      <div class="lt-info">
-        <div class="lt-name">Morning Golden Hr</div>
-        <div class="lt-time" id="lt-golden-morn">—</div>
-      </div>
-    </div>
-
-    <div class="lt-row">
-      <div class="lt-swatch" style="background:rgba(91,159,245,0.12)">◑</div>
-      <div class="lt-info">
-        <div class="lt-name">Solar Noon</div>
-        <div class="lt-time" id="lt-noon">—</div>
-      </div>
-    </div>
-
-    <div class="lt-row">
-      <div class="lt-swatch" style="background:rgba(232,160,32,0.14)">✦</div>
-      <div class="lt-info">
-        <div class="lt-name">Evening Golden Hr</div>
-        <div class="lt-time" id="lt-golden-eve">—</div>
-      </div>
-    </div>
-
-    <div class="lt-row">
-      <div class="lt-swatch" style="background:rgba(100,100,180,0.14)">🌇</div>
-      <div class="lt-info">
-        <div class="lt-name">Sunset</div>
-        <div class="lt-time" id="lt-sunset">—</div>
-      </div>
-    </div>
-
-    <div id="day-arc-wrap">
-      <div id="day-arc-label">Daylight Span</div>
-      <div id="day-arc-bar">
-        <div class="arc-seg" id="arc-blue-morn"  style="background:rgba(91,159,245,0.55)"></div>
-        <div class="arc-seg" id="arc-golden-morn" style="background:rgba(232,160,32,0.75)"></div>
-        <div class="arc-seg" id="arc-day"         style="background:rgba(255,245,200,0.2)"></div>
-        <div class="arc-seg" id="arc-golden-eve"  style="background:rgba(232,160,32,0.75)"></div>
-        <div class="arc-seg" id="arc-blue-eve"    style="background:rgba(91,159,245,0.55)"></div>
-        <div id="arc-cursor"></div>
-      </div>
-    </div>
-  </div>
 
   <!-- Controls — compact single row -->
   <div id="controls">
@@ -918,20 +901,26 @@
       </div>
     </div>
     <div class="vr"></div>
-    <!-- Search embedded at right of bar -->
+    <!-- Search: icon toggles upward popup -->
     <div id="search-wrap">
-      <button id="search-toggle" title="Search">
+      <button id="search-toggle" class="bar-btn" title="Search">
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
           <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.4"/>
           <path d="M8.5 8.5L11.5 11.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
         </svg>
       </button>
-      <div id="search-inner">
-        <input id="search-inp" type="text" placeholder="Search place, address…" autocomplete="off" spellcheck="false">
-        <div id="search-spinner"></div>
-        <button id="search-clear">×</button>
+      <div id="search-popup">
+        <div id="search-input-row">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M8.5 8.5L11.5 11.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          <input id="search-inp" type="text" placeholder="Search place, address, business…" autocomplete="off" spellcheck="false">
+          <div id="search-spinner"></div>
+          <button id="search-clear">×</button>
+        </div>
+        <div id="search-results"></div>
       </div>
-      <div id="search-results"></div>
     </div>
   </div>
 
@@ -1154,23 +1143,26 @@ function updateLightTimes(times, date) {
     return fmtTime(a) + ' – ' + fmtTime(b);
   };
 
-  document.getElementById('lt-sunrise').textContent = fmtTime(times.sunrise);
-  document.getElementById('lt-golden-morn').textContent = fmtRange(times.sunriseEnd, times.goldenHourEnd);
-  document.getElementById('lt-noon').textContent = fmtTime(times.solarNoon);
-  document.getElementById('lt-golden-eve').textContent = fmtRange(times.goldenHour, times.sunsetStart);
-  document.getElementById('lt-sunset').textContent = fmtTime(times.sunset);
+  const fmtGoldenMorn = fmtRange(times.sunriseEnd, times.goldenHourEnd);
+  const fmtGoldenEve  = fmtRange(times.goldenHour, times.sunsetStart);
+  const el = (id, val) => { const e = document.getElementById(id); if(e) e.textContent = val; };
 
-  // Highlight currently active row
+  // Solar panel (desktop) golden hour rows
+  el('lt-golden-morn', fmtGoldenMorn);
+  el('lt-golden-eve',  fmtGoldenEve);
+
+  // Mobile drawer
+  el('mv-golden-morn', fmtGoldenMorn);
+  el('mv-golden-eve',  fmtGoldenEve);
+
+  // Active highlighting (solar panel values are solar-val spans)
   const now = date;
   const inGoldenMorn = now >= times.sunriseEnd && now <= times.goldenHourEnd;
   const inGoldenEve  = now >= times.goldenHour  && now <= times.sunsetStart;
-  document.getElementById('lt-golden-morn').className = 'lt-time' + (inGoldenMorn ? ' active' : '');
-  document.getElementById('lt-golden-eve').className  = 'lt-time' + (inGoldenEve  ? ' active' : '');
-
-  // Sync to mobile drawer
-  const elM = (id, val) => { const e = document.getElementById(id); if(e) e.textContent = val; };
-  elM('mv-golden-morn', fmtRange(times.sunriseEnd, times.goldenHourEnd));
-  elM('mv-golden-eve',  fmtRange(times.goldenHour, times.sunsetStart));
+  const gmEl = document.getElementById('lt-golden-morn');
+  const geEl = document.getElementById('lt-golden-eve');
+  if (gmEl) { gmEl.style.color = inGoldenMorn ? '#f0bf55' : ''; gmEl.style.textShadow = inGoldenMorn ? '0 0 10px rgba(232,160,32,0.5)' : ''; }
+  if (geEl) { geEl.style.color = inGoldenEve  ? '#f0bf55' : ''; geEl.style.textShadow = inGoldenEve  ? '0 0 10px rgba(232,160,32,0.5)' : ''; }
 
   // ── Day arc bar ──────────────────────────────────────────
   // Span the bar from civil dawn to civil dusk
@@ -1193,21 +1185,25 @@ function updateLightTimes(times, date) {
     el.style.width = Math.max(0, t - f) + '%';
   };
 
-  seg('arc-blue-morn',   times.dawn,        times.sunrise);
-  seg('arc-golden-morn', times.sunriseEnd,   times.goldenHourEnd);
-  seg('arc-day',         times.goldenHourEnd, times.goldenHour);
-  seg('arc-golden-eve',  times.goldenHour,   times.sunsetStart);
-  seg('arc-blue-eve',    times.sunset,       times.dusk);
+  const arcPairs = [
+    ['arc-blue-morn',   'arc-blue-morn-m',   times.dawn,         times.sunrise],
+    ['arc-golden-morn', 'arc-golden-morn-m',  times.sunriseEnd,   times.goldenHourEnd],
+    ['arc-day',         'arc-day-m',          times.goldenHourEnd, times.goldenHour],
+    ['arc-golden-eve',  'arc-golden-eve-m',   times.goldenHour,   times.sunsetStart],
+    ['arc-blue-eve',    'arc-blue-eve-m',     times.sunset,       times.dusk],
+  ];
+  arcPairs.forEach(([id, idM, from, to]) => {
+    [id, idM].forEach(i => { if(i) seg(i, from, to); });
+  });
 
-  // Cursor = current time position
+  // Cursor (desktop + mobile)
   const cursorPct = pct(now);
-  const cursor = document.getElementById('arc-cursor');
-  if (cursorPct !== null) {
-    cursor.style.display = '';
-    cursor.style.left = cursorPct + '%';
-  } else {
-    cursor.style.display = 'none';
-  }
+  ['arc-cursor', 'arc-cursor-m'].forEach(cid => {
+    const cursor = document.getElementById(cid);
+    if (!cursor) return;
+    if (cursorPct !== null) { cursor.style.display = ''; cursor.style.left = cursorPct + '%'; }
+    else { cursor.style.display = 'none'; }
+  });
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1807,16 +1803,16 @@ window.addEventListener('resize', () => {
   let debounceTimer = null;
   let activeRequest = 0;
 
-  // Open/close the expanding input
+  // Open/close the popup
   toggleBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     const isOpen = wrap.classList.toggle('open');
     if (isOpen) {
-      setTimeout(() => inp.focus(), 260);
+      setTimeout(() => inp.focus(), 50);
     } else {
       inp.value = '';
       clearBtn.style.display = 'none';
-      results.style.display = 'none';
+      results.innerHTML = '';
     }
   });
 
@@ -1834,19 +1830,19 @@ window.addEventListener('resize', () => {
         el.addEventListener('click', () => selectResult(items[i]));
       });
     }
-    results.style.display = 'block';
+    // results are inside popup, always visible when popup is open
   }
 
   function selectResult(item) {
     inp.value = item.display_name.split(',')[0];
-    results.style.display = 'none';
+    results.innerHTML = '';
     clearBtn.style.display = 'inline';
     // collapse after selecting
     setTimeout(() => {
       wrap.classList.remove('open');
       inp.value = '';
       clearBtn.style.display = 'none';
-    }, 800);
+    }, 600);
 
     const newLat = parseFloat(item.lat);
     const newLng = parseFloat(item.lon);
@@ -1881,7 +1877,6 @@ window.addEventListener('resize', () => {
     } catch(e) {
       if (reqId === activeRequest) {
         results.innerHTML = '<div class="sr-empty">Search unavailable</div>';
-        results.style.display = 'block';
       }
     } finally {
       if (reqId === activeRequest) spinner.style.display = 'none';
@@ -1891,15 +1886,16 @@ window.addEventListener('resize', () => {
   inp.addEventListener('input', () => {
     clearBtn.style.display = inp.value ? 'inline' : 'none';
     clearTimeout(debounceTimer);
-    if (!inp.value.trim()) { results.style.display = 'none'; return; }
+    if (!inp.value.trim()) { results.innerHTML = ''; return; }
     debounceTimer = setTimeout(() => doSearch(inp.value), 380);
   });
 
   inp.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
-      results.style.display = 'none';
+      results.innerHTML = '';
       wrap.classList.remove('open');
       inp.value = '';
+      clearBtn.style.display = 'none';
     }
     if (e.key === 'Enter') { clearTimeout(debounceTimer); doSearch(inp.value); }
   });
@@ -1907,16 +1903,16 @@ window.addEventListener('resize', () => {
   clearBtn.addEventListener('click', () => {
     inp.value = '';
     clearBtn.style.display = 'none';
-    results.style.display = 'none';
+    results.innerHTML = '';
     inp.focus();
   });
 
   document.addEventListener('click', e => {
     if (!wrap.contains(e.target)) {
-      results.style.display = 'none';
-      if (wrap.classList.contains('open') && !inp.value) {
-        wrap.classList.remove('open');
-      }
+      results.innerHTML = '';
+      wrap.classList.remove('open');
+      inp.value = '';
+      clearBtn.style.display = 'none';
     }
   });
 })();
