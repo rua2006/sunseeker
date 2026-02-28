@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SunSeeker — Find Your Light</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0c0c0d;
+      --glass: rgba(10, 10, 11, 0.78);
+      --glass-border: rgba(255, 255, 255, 0.07);
+      --text: #ede8df;
+      --muted: rgba(237, 232, 223, 0.38);
+      --accent-gold: #e8a020;
+      --accent-blue: #5b9ff5;
+      --accent-purple: #a07edb;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    #map {
+      width: 100vw;
+      height: 100dvh;
+      position: absolute;
+      inset: 0;
+    }
+
+    /* ─── Overlay layout ───────────────────────────────── */
+    #ui {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    /* ─── Header ────────────────────────────────────────── */
+    #header {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      display: flex;
+      justify-content: center;
+      padding-top: 28px;
+    }
+
+    #header h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 20px;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--text);
+      opacity: 0.85;
+    }
+
+    /* ─── Phase badge (top-left) ─────────────────────────── */
+    #phase-badge {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 15px;
+      border-radius: 9px;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      border: 1px solid transparent;
+      transition: all 0.6s ease;
+      opacity: 0;
+    }
+
+    #phase-badge.visible { opacity: 1; }
+
+    #phase-badge.golden {
+      background: rgba(232, 160, 32, 0.13);
+      border-color: rgba(232, 160, 32, 0.35);
+      color: #f0bf55;
+    }
+
+    #phase-badge.blue {
+      background: rgba(91, 159, 245, 0.11);
+      border-color: rgba(91, 159, 245, 0.32);
+      color: #8dbfff;
+    }
+
+    #phase-badge.civil {
+      background: rgba(160, 126, 219, 0.1);
+      border-color: rgba(160, 126, 219, 0.28);
+      color: #c0a0ff;
+    }
+
+    .badge-icon {
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .badge-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: throb 2.4s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes throb {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.25; transform: scale(0.7); }
+    }
+
+    /* ─── Solar info panel (top-right) ──────────────────── */
+    #solar-panel {
+      position: absolute;
+      top: 24px; right: 24px;
+      pointer-events: none;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(24px) saturate(1.2);
+      -webkit-backdrop-filter: blur(24px) saturate(1.2);
+      border-radius: 13px;
+      padding: 18px 20px;
+      width: 210px;
+    }
+
+    .panel-label {
+      font-size: 8.5px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .solar-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 4px 0;
+    }
+
+    .solar-row + .solar-row {
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .solar-key {
+      font-size: 9.5px;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    .solar-val {
+      font-size: 12.5px;
+      color: var(--text);
+      transition: color 0.4s;
+    }
+
+    .sep {
+      height: 1px;
+      background: rgba(255,255,255,0.06);
+      margin: 10px 0;
+    }
+
+    /* ─── Sun compass (right, above controls) ──────────────── */
+    #compass-wrap {
+      position: absolute;
+      bottom: 132px;
+      right: 24px;
+      pointer-events: none;
+    }
+
+    #compass-wrap canvas {
+      display: block;
+    }
+
+    /* ─── Controls bar (bottom center) ──────────────────────── */
+    #controls {
+      position: absolute;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: all;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(24px) saturate(1.2);
+      -webkit-backdrop-filter: blur(24px) saturate(1.2);
+      border-radius: 16px;
+      padding: 18px 28px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      white-space: nowrap;
+    }
+
+    .ctrl-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .ctrl-label {
+      font-size: 8.5px;
+      letter-spacing: 0.17em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .ctrl-input {
+      background: rgba(255,255,255,0.055);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      padding: 7px 12px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      color-scheme: dark;
+    }
+
+    .ctrl-input:hover { border-color: rgba(255,255,255,0.16); background: rgba(255,255,255,0.085); }
+    .ctrl-input:focus { border-color: rgba(255,255,255,0.22); }
+
+    .vr {
+      width: 1px;
+      height: 44px;
+      background: var(--glass-border);
+      flex-shrink: 0;
+    }
+
+    #locate-btn {
+      pointer-events: all;
+      background: rgba(255,255,255,0.055);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      padding: 8px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    #locate-btn:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.18);
+    }
+
+    #locate-btn svg { flex-shrink: 0; }
+
+    /* ─── Sun ray canvas overlay ─────────────────────────── */
+    #ray-canvas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.8s;
+    }
+
+    /* ─── Map attribution override ───────────────────────── */
+    .maplibregl-ctrl-attrib {
+      font-size: 9px !important;
+      opacity: 0.4;
+    }
+
+    /* ─── Responsive ─────────────────────────────────────── */
+    @media (max-width: 600px) {
+      #controls { flex-wrap: wrap; gap: 14px; min-width: calc(100vw - 32px); justify-content: center; }
+      .vr { display: none; }
+      #solar-panel { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+<canvas id="ray-canvas"></canvas>
+
+<div id="ui">
+
+  <!-- Header -->
+  <div id="header"><h1>SunSeeker</h1></div>
+
+  <!-- Phase badge -->
+  <div id="phase-badge">
+    <span class="badge-dot"></span>
+    <span class="badge-icon" id="badge-icon"></span>
+    <span id="badge-text"></span>
+  </div>
+
+  <!-- Solar info -->
+  <div id="solar-panel">
+    <div class="panel-label">Solar Position</div>
+    <div class="solar-row">
+      <span class="solar-key">Azimuth</span>
+      <span class="solar-val" id="v-azimuth">—</span>
+    </div>
+    <div class="solar-row">
+      <span class="solar-key">Altitude</span>
+      <span class="solar-val" id="v-altitude">—</span>
+    </div>
+    <div class="solar-row">
+      <span class="solar-key">Phase</span>
+      <span class="solar-val" id="v-phase">—</span>
+    </div>
+    <div class="sep"></div>
+    <div class="solar-row">
+      <span class="solar-key">Sunrise</span>
+      <span class="solar-val" id="v-sunrise">—</span>
+    </div>
+    <div class="solar-row">
+      <span class="solar-key">Sunset</span>
+      <span class="solar-val" id="v-sunset">—</span>
+    </div>
+    <div class="solar-row">
+      <span class="solar-key">Golden Hr</span>
+      <span class="solar-val" id="v-golden">—</span>
+    </div>
+  </div>
+
+  <!-- Compass -->
+  <div id="compass-wrap">
+    <canvas id="compass" width="110" height="110"></canvas>
+  </div>
+
+  <!-- Controls -->
+  <div id="controls">
+    <div class="ctrl-group">
+      <div class="ctrl-label">Date</div>
+      <input type="date" class="ctrl-input" id="inp-date">
+    </div>
+    <div class="vr"></div>
+    <div class="ctrl-group">
+      <div class="ctrl-label">Local Time</div>
+      <input type="time" class="ctrl-input" id="inp-time">
+    </div>
+    <div class="vr"></div>
+    <button id="locate-btn">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <circle cx="6" cy="6" r="2.2" fill="currentColor"/>
+        <path d="M6 1v1.5M6 9.5V11M1 6h1.5M9.5 6H11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+      </svg>
+      My Location
+    </button>
+  </div>
+
+</div>
+
+<script>
+window.addEventListener('load', function() {
+/* ═══════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════ */
+let map;
+let lat = 40.7484, lng = -73.9967; // Default: Midtown NYC
+let lastSunData = null;
+
+/* ═══════════════════════════════════════════════════════
+   DATE / TIME INIT
+═══════════════════════════════════════════════════════ */
+const pad = n => String(n).padStart(2, '0');
+
+function nowLocal() { return new Date(); }
+
+function setInputsToNow() {
+  const d = nowLocal();
+  document.getElementById('inp-date').value =
+    `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  document.getElementById('inp-time').value =
+    `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+setInputsToNow();
+
+function getSelectedDate() {
+  const dv = document.getElementById('inp-date').value;
+  const tv = document.getElementById('inp-time').value;
+  if (!dv || !tv) return nowLocal();
+  return new Date(`${dv}T${tv}:00`);
+}
+
+/* ═══════════════════════════════════════════════════════
+   MAP INIT
+═══════════════════════════════════════════════════════ */
+map = new maplibregl.Map({
+  container: 'map',
+  style: 'https://tiles.openfreemap.org/styles/liberty',
+  center: [lng, lat],
+  zoom: 16,
+  pitch: 52,
+  bearing: -20,
+  antialias: true,
+  attributionControl: true
+});
+
+map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-left');
+
+map.on('load', () => {
+  tryAdd3DBuildings();
+  updateAll();
+  // Keep lat/lng in sync
+  map.on('moveend', () => {
+    const c = map.getCenter();
+    lat = c.lat; lng = c.lng;
+    updateAll();
+  });
+});
+
+function tryAdd3DBuildings() {
+  const style = map.getStyle();
+  const layers = style.layers || [];
+
+  // Find first symbol layer (insert buildings below labels)
+  let beforeId;
+  for (const l of layers) {
+    if (l.type === 'symbol') { beforeId = l.id; break; }
+  }
+
+  // Remove any existing 3d-buildings layer we added
+  if (map.getLayer('ss-buildings')) map.removeLayer('ss-buildings');
+
+  // Detect the source name used for vector tiles
+  const sources = Object.keys(style.sources || {});
+  const vectorSource = sources.find(s => {
+    const src = style.sources[s];
+    return src.type === 'vector';
+  });
+
+  if (!vectorSource) return; // Raster-only style, skip
+
+  try {
+    map.addLayer({
+      id: 'ss-buildings',
+      type: 'fill-extrusion',
+      source: vectorSource,
+      'source-layer': 'building',
+      minzoom: 14,
+      paint: {
+        'fill-extrusion-color': [
+          'interpolate', ['linear'], ['zoom'],
+          14, '#1e1e22',
+          17, '#2a2a30'
+        ],
+        'fill-extrusion-height': [
+          'coalesce', ['get', 'render_height'], ['get', 'height'], 5
+        ],
+        'fill-extrusion-base': [
+          'coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0
+        ],
+        'fill-extrusion-opacity': 0.88
+      }
+    }, beforeId);
+  } catch(e) {
+    // Try common alternative source-layer names
+    try {
+      map.addLayer({
+        id: 'ss-buildings',
+        type: 'fill-extrusion',
+        source: vectorSource,
+        'source-layer': 'buildings',
+        minzoom: 14,
+        paint: {
+          'fill-extrusion-color': '#202028',
+          'fill-extrusion-height': ['coalesce', ['get', 'height'], 5],
+          'fill-extrusion-base': ['coalesce', ['get', 'min_height'], 0],
+          'fill-extrusion-opacity': 0.85
+        }
+      }, beforeId);
+    } catch(e2) { /* style may handle buildings natively */ }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   SUN PHASE LOGIC
+═══════════════════════════════════════════════════════ */
+function getSunPhase(altDeg) {
+  if (altDeg < -18) return {
+    name: 'Night', abbr: 'Night', color: '#202040',
+    lightColor: '#0a0a18', lightInt: 0.1, badge: null
+  };
+  if (altDeg < -12) return {
+    name: 'Astronomical Twilight', abbr: 'Astro Twilight', color: '#1e2045',
+    lightColor: '#10103a', lightInt: 0.15, badge: null
+  };
+  if (altDeg < -6) return {
+    name: 'Nautical Twilight', abbr: 'Nautical Twil.', color: '#252660',
+    lightColor: '#181858', lightInt: 0.2, badge: null
+  };
+  if (altDeg < -4) return {
+    name: 'Civil Twilight', abbr: 'Civil Twilight', color: '#4a3090',
+    lightColor: '#2a1a60', lightInt: 0.25, badge: 'civil', icon: '🌆'
+  };
+  if (altDeg < 0) return {
+    name: 'Blue Hour', abbr: 'Blue Hour', color: '#4a80e0',
+    lightColor: '#3060c0', lightInt: 0.4, badge: 'blue', icon: '🔵'
+  };
+  if (altDeg < 6) return {
+    name: 'Golden Hour', abbr: 'Golden Hour', color: '#e8a020',
+    lightColor: '#d07010', lightInt: 0.72, badge: 'golden', icon: '✦'
+  };
+  if (altDeg < 20) return {
+    name: 'Low Sun', abbr: 'Low Sun', color: '#d4a855',
+    lightColor: '#c09040', lightInt: 0.6, badge: null
+  };
+  if (altDeg < 45) return {
+    name: 'Daytime', abbr: 'Daytime', color: '#f5efdf',
+    lightColor: '#f0e8d0', lightInt: 0.5, badge: null
+  };
+  return {
+    name: 'High Sun', abbr: 'High Sun', color: '#ffffff',
+    lightColor: '#ffffff', lightInt: 0.45, badge: null
+  };
+}
+
+function fmtTime(d) {
+  if (!d || isNaN(d.getTime())) return '—';
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function azToCardinal(deg) {
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(((deg % 360) + 360) % 360 / 22.5) % 16];
+}
+
+/* ═══════════════════════════════════════════════════════
+   MAIN UPDATE
+═══════════════════════════════════════════════════════ */
+function updateAll() {
+  const date = getSelectedDate();
+  const pos = SunCalc.getPosition(date, lat, lng);
+  const times = SunCalc.getTimes(date, lat, lng);
+
+  const altDeg = pos.altitude * 180 / Math.PI;
+  // SunCalc azimuth: measured from south, going west-negative / east-positive
+  // Convert to compass bearing: 0=N, 90=E, 180=S, 270=W
+  const azDeg = ((pos.azimuth * 180 / Math.PI) + 180 + 360) % 360;
+
+  const phase = getSunPhase(altDeg);
+  lastSunData = { altDeg, azDeg, phase, times, date };
+
+  updateInfoPanel(altDeg, azDeg, phase, times);
+  updateBadge(phase);
+  updateMapLight(altDeg, azDeg, phase);
+  drawCompass(azDeg, altDeg, phase);
+  drawRayOverlay(azDeg, altDeg, phase);
+}
+
+/* ═══════════════════════════════════════════════════════
+   INFO PANEL
+═══════════════════════════════════════════════════════ */
+function updateInfoPanel(altDeg, azDeg, phase, times) {
+  document.getElementById('v-azimuth').textContent =
+    `${azDeg.toFixed(1)}° ${azToCardinal(azDeg)}`;
+  document.getElementById('v-altitude').textContent =
+    `${altDeg.toFixed(1)}°`;
+
+  const phaseEl = document.getElementById('v-phase');
+  phaseEl.textContent = phase.abbr;
+  phaseEl.style.color = phase.color;
+
+  document.getElementById('v-sunrise').textContent = fmtTime(times.sunrise);
+  document.getElementById('v-sunset').textContent = fmtTime(times.sunset);
+
+  // Golden hour windows
+  const ghMorn = times.goldenHourEnd;
+  const ghEve = times.goldenHour;
+  let ghStr = '—';
+  if (ghMorn && ghEve && !isNaN(ghMorn) && !isNaN(ghEve)) {
+    ghStr = `${fmtTime(times.goldenHourEnd)} & ${fmtTime(times.goldenHour)}`;
+  }
+  document.getElementById('v-golden').textContent = ghStr;
+}
+
+/* ═══════════════════════════════════════════════════════
+   BADGE
+═══════════════════════════════════════════════════════ */
+function updateBadge(phase) {
+  const badge = document.getElementById('phase-badge');
+  badge.className = '';
+  if (phase.badge) {
+    badge.className = `visible ${phase.badge}`;
+    document.getElementById('badge-icon').textContent = phase.icon;
+    document.getElementById('badge-text').textContent = phase.name;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   MAP LIGHT
+═══════════════════════════════════════════════════════ */
+function updateMapLight(altDeg, azDeg, phase) {
+  if (!map.isStyleLoaded()) return;
+
+  // MapLibre light position: [radial, azimuthal_from_N_CW, polar_from_zenith]
+  const polar = Math.max(1, Math.min(89, 90 - altDeg));
+
+  try {
+    map.setLight({
+      anchor: 'map',
+      color: phase.lightColor,
+      intensity: phase.lightInt,
+      position: [1.5, azDeg, polar]
+    });
+  } catch(e) {}
+}
+
+/* ═══════════════════════════════════════════════════════
+   COMPASS CANVAS
+═══════════════════════════════════════════════════════ */
+function drawCompass(azDeg, altDeg, phase) {
+  const canvas = document.getElementById('compass');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2;
+  const R = cx - 6;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // BG circle
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(10,10,12,0.72)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Tick marks
+  for (let i = 0; i < 36; i++) {
+    const a = (i / 36) * Math.PI * 2 - Math.PI / 2;
+    const isMain = i % 9 === 0;
+    const r0 = R - (isMain ? 8 : 4);
+    ctx.beginPath();
+    ctx.moveTo(cx + R * Math.cos(a), cy + R * Math.sin(a));
+    ctx.lineTo(cx + r0 * Math.cos(a), cy + r0 * Math.sin(a));
+    ctx.strokeStyle = isMain ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = isMain ? 1.5 : 0.8;
+    ctx.stroke();
+  }
+
+  // Cardinal labels
+  ctx.font = '9px "DM Mono"';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  [['N', 0], ['E', 90], ['S', 180], ['W', 270]].forEach(([l, deg]) => {
+    const a = (deg - 90) * Math.PI / 180;
+    ctx.fillStyle = l === 'N' ? 'rgba(220,80,80,0.8)' : 'rgba(255,255,255,0.3)';
+    ctx.fillText(l, cx + (R - 16) * Math.cos(a), cy + (R - 16) * Math.sin(a));
+  });
+
+  // Sun beam gradient
+  const sunRad = (azDeg - 90) * Math.PI / 180;
+  const beamLen = R - 24;
+  const sunX = cx + beamLen * Math.cos(sunRad);
+  const sunY = cy + beamLen * Math.sin(sunRad);
+
+  if (altDeg > -18) {
+    // Glow halo
+    const grd = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 18);
+    grd.addColorStop(0, phase.color + 'aa');
+    grd.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, 18, 0, Math.PI * 2);
+    ctx.fillStyle = grd;
+    ctx.fill();
+
+    // Ray line
+    const lineGrd = ctx.createLinearGradient(cx, cy, sunX, sunY);
+    lineGrd.addColorStop(0, 'transparent');
+    lineGrd.addColorStop(1, phase.color + 'cc');
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(sunX, sunY);
+    ctx.strokeStyle = lineGrd;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Sun dot
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, altDeg < 0 ? 3.5 : 5, 0, Math.PI * 2);
+    ctx.fillStyle = altDeg < 0 ? phase.color + '80' : phase.color;
+    ctx.fill();
+  }
+
+  // Altitude arc (shows sun height)
+  const altNorm = Math.max(0, Math.min(1, (altDeg + 18) / 106));
+  const arcStart = Math.PI * 1.1;
+  const arcEnd   = Math.PI * 1.9;
+  const arcSpan  = arcEnd - arcStart;
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, R - 3, arcStart, arcEnd);
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  if (altNorm > 0) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, R - 3, arcStart, arcStart + arcSpan * altNorm);
+    ctx.strokeStyle = phase.color;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
+  // Center
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(237,232,223,0.45)';
+  ctx.fill();
+}
+
+/* ═══════════════════════════════════════════════════════
+   DIRECTIONAL SUN RAY OVERLAY
+   A soft gradient bloom showing where sunlight enters the scene
+═══════════════════════════════════════════════════════ */
+function drawRayOverlay(azDeg, altDeg, phase) {
+  const canvas = document.getElementById('ray-canvas');
+  const W = window.innerWidth, H = window.innerHeight;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  if (altDeg < -12) {
+    canvas.style.opacity = '0';
+    return;
+  }
+
+  const intensity = Math.max(0, Math.min(0.18, (altDeg + 12) / 60 * 0.18));
+  canvas.style.opacity = String(intensity / 0.18);
+
+  // Sun direction: azDeg is clockwise from north
+  // On screen: 0=N=top, 90=E=right, 180=S=bottom, 270=W=left
+  // Map bearing can rotate this, but we simplify to map-north = screen-top
+  const screenAngle = ((azDeg - map.getBearing()) % 360 + 360) % 360;
+  const rad = (screenAngle - 90) * Math.PI / 180;
+
+  // Source point on screen edge, opposite to sun direction (light comes FROM sun)
+  const cx = W / 2, cy = H / 2;
+  const dist = Math.max(W, H);
+  const srcX = cx - Math.cos(rad) * dist * 0.9;
+  const srcY = cy - Math.sin(rad) * dist * 0.9;
+
+  const grd = ctx.createRadialGradient(srcX, srcY, 0, srcX, srcY, dist * 1.1);
+  grd.addColorStop(0, phase.color + '28');
+  grd.addColorStop(0.4, phase.color + '0a');
+  grd.addColorStop(1, 'transparent');
+
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/* ═══════════════════════════════════════════════════════
+   EVENTS
+═══════════════════════════════════════════════════════ */
+document.getElementById('inp-date').addEventListener('input', updateAll);
+document.getElementById('inp-time').addEventListener('input', updateAll);
+
+map.on('rotate', () => {
+  if (lastSunData) drawRayOverlay(lastSunData.azDeg, lastSunData.altDeg, lastSunData.phase);
+});
+
+document.getElementById('locate-btn').addEventListener('click', () => {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos => {
+    lat = pos.coords.latitude;
+    lng = pos.coords.longitude;
+    map.flyTo({ center: [lng, lat], zoom: 16, duration: 1800 });
+    setTimeout(updateAll, 200);
+  }, () => {
+    alert('Location access denied or unavailable.');
+  });
+});
+
+// Redraw overlay on resize
+window.addEventListener('resize', () => {
+  if (lastSunData) drawRayOverlay(lastSunData.azDeg, lastSunData.altDeg, lastSunData.phase);
+});
+
+// Auto-tick every 60s if user hasn't changed time
+let autoTick = true;
+document.getElementById('inp-time').addEventListener('change', () => { autoTick = false; });
+setInterval(() => {
+  if (autoTick) { setInputsToNow(); updateAll(); }
+}, 60000);
+
+}); // end window load
+</script>
+</body>
+</html>
