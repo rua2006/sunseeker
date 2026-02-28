@@ -1502,8 +1502,15 @@ function drawRayOverlay(azDeg, altDeg, phase) {
 
 // Debounce helper – avoids hammering on every map move
 function scheduleShadowUpdate(azDeg, altDeg) {
+  // Cancel any pending timer-based update
   clearTimeout(shadowUpdateTimer);
-  shadowUpdateTimer = setTimeout(() => computeAndRenderShadows(azDeg, altDeg), 180);
+  // Wait for MapLibre to finish its render cycle before querying features.
+  // queryRenderedFeatures returns empty if called before the frame is painted.
+  if (map.isStyleLoaded()) {
+    map.once('idle', () => computeAndRenderShadows(azDeg, altDeg));
+  } else {
+    shadowUpdateTimer = setTimeout(() => computeAndRenderShadows(azDeg, altDeg), 300);
+  }
 }
 
 function clearShadowLayer() {
