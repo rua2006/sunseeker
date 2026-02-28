@@ -175,8 +175,8 @@
     /* ─── Sun compass (right, above controls) ──────────────── */
     #compass-wrap {
       position: absolute;
-      bottom: 132px;
-      right: 24px;
+      bottom: 72px;
+      right: 16px;
       pointer-events: all;
       cursor: grab;
       user-select: none;
@@ -303,8 +303,8 @@
     /* ─── Light Times Panel (left side) ─────────────────── */
     #light-times {
       position: absolute;
-      left: 24px;
-      bottom: 28px;
+      left: 16px;
+      bottom: 72px;
       pointer-events: none;
       background: var(--glass);
       border: 1px solid var(--glass-border);
@@ -539,35 +539,41 @@
       flex-shrink: 0;
     }
 
-    /* ─── Search bar (top center) ──────────────────────────── */
+    /* ─── Search (embedded in bottom bar) ─────────────────── */
     #search-wrap {
-      position: absolute;
-      top: 22px;
-      left: 50%;
-      transform: translateX(-50%);
-      pointer-events: all;
-      width: 320px;
-      z-index: 40;
-    }
-
-    #search-row {
+      position: relative;
       display: flex;
       align-items: center;
-      background: var(--glass);
-      border: 1px solid var(--glass-border);
-      backdrop-filter: blur(24px) saturate(1.2);
-      -webkit-backdrop-filter: blur(24px) saturate(1.2);
-      border-radius: 12px;
-      padding: 0 12px;
-      gap: 8px;
-      transition: border-color 0.2s;
+      pointer-events: all;
     }
 
-    #search-row:focus-within {
-      border-color: rgba(255,255,255,0.22);
+    #search-toggle {
+      background: transparent;
+      border: none;
+      border-radius: 7px;
+      color: var(--muted);
+      padding: 5px 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    #search-toggle:hover, #search-wrap.open #search-toggle {
+      background: rgba(255,255,255,0.07);
+      color: var(--text);
     }
 
-    #search-row svg { flex-shrink: 0; opacity: 0.4; }
+    #search-inner {
+      display: flex;
+      align-items: center;
+      width: 0;
+      overflow: hidden;
+      transition: width 0.25s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    #search-wrap.open #search-inner {
+      width: 210px;
+    }
 
     #search-inp {
       flex: 1;
@@ -577,7 +583,8 @@
       color: var(--text);
       font-family: 'DM Mono', monospace;
       font-size: 12px;
-      padding: 10px 0;
+      padding: 5px 4px;
+      min-width: 0;
       letter-spacing: 0.02em;
     }
 
@@ -588,32 +595,34 @@
       border: none;
       color: var(--muted);
       cursor: pointer;
-      padding: 4px;
+      padding: 2px 4px;
       display: none;
       line-height: 1;
       font-size: 14px;
+      flex-shrink: 0;
     }
-
     #search-clear:hover { color: var(--text); }
 
     #search-results {
       display: none;
-      margin-top: 6px;
+      position: absolute;
+      bottom: calc(100% + 10px);
+      right: 0;
+      width: 280px;
       background: rgba(8, 8, 12, 0.97);
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 11px;
       overflow: hidden;
+      z-index: 100;
     }
 
     .sr-item {
-      padding: 10px 14px;
+      padding: 9px 13px;
       cursor: pointer;
       transition: background 0.15s;
       border-bottom: 1px solid rgba(255,255,255,0.05);
     }
-
     .sr-item:last-child { border-bottom: none; }
-
     .sr-item:hover { background: rgba(255,255,255,0.07); }
 
     .sr-name {
@@ -634,7 +643,7 @@
     }
 
     .sr-empty {
-      padding: 12px 14px;
+      padding: 11px 13px;
       font-size: 11px;
       color: var(--muted);
       text-align: center;
@@ -642,12 +651,13 @@
 
     #search-spinner {
       display: none;
-      width: 12px; height: 12px;
+      width: 11px; height: 11px;
       border: 1.5px solid rgba(255,255,255,0.15);
       border-top-color: var(--text);
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
       flex-shrink: 0;
+      margin-right: 4px;
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -713,12 +723,13 @@
 
     /* ─── Responsive ─────────────────────────────────────── */
     @media (max-width: 600px) {
-      #controls { flex-wrap: wrap; gap: 14px; min-width: calc(100vw - 32px); justify-content: center; }
+      #controls { gap: 2px; padding: 6px 8px; }
       .vr { display: none; }
       #solar-panel { display: none !important; }
       #light-times { display: none !important; }
       #compass-wrap { display: none; }
       #mobile-solar-btn { display: flex !important; }
+      #search-wrap.open #search-inner { width: 150px; }
     }
   </style>
 </head>
@@ -732,19 +743,7 @@
   <!-- Header (hidden on desktop – search takes its place) -->
   <div id="header" style="display:none"><h1>SunSeeker</h1></div>
 
-  <!-- Search -->
-  <div id="search-wrap">
-    <div id="search-row">
-      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-        <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.4"/>
-        <path d="M8.5 8.5L11.5 11.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-      </svg>
-      <input id="search-inp" type="text" placeholder="Search a place, address, business…" autocomplete="off" spellcheck="false">
-      <div id="search-spinner"></div>
-      <button id="search-clear">×</button>
-    </div>
-    <div id="search-results"></div>
-  </div>
+
 
   <!-- Phase badge -->
   <div id="phase-badge">
@@ -889,32 +888,24 @@
     </div>
   </div>
 
-  <!-- Controls -->
+  <!-- Controls — compact single row -->
   <div id="controls">
-    <div class="ctrl-group">
-      <div class="ctrl-label">Date</div>
-      <input type="date" class="ctrl-input" id="inp-date">
-    </div>
+    <input type="date" class="ctrl-input" id="inp-date">
     <div class="vr"></div>
-    <div class="ctrl-group">
-      <div class="ctrl-label">Local Time</div>
-      <input type="time" class="ctrl-input" id="inp-time">
-    </div>
+    <input type="time" class="ctrl-input" id="inp-time">
     <div class="vr"></div>
-    <button id="locate-btn">
+    <button id="locate-btn" class="bar-btn" title="My Location">
       <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
         <circle cx="6" cy="6" r="2.2" fill="currentColor"/>
         <path d="M6 1v1.5M6 9.5V11M1 6h1.5M9.5 6H11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
         <circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1" opacity="0.5"/>
       </svg>
-      My Location
     </button>
-    <div class="vr"></div>
-    <button id="shadow-btn">
+    <button id="shadow-btn" class="bar-btn" title="Cast Shadows">
       <div class="btn-dot"></div>
-      Cast Shadows
+      Shadows
     </button>
-    <div class="info-badge">
+    <div class="info-badge" style="margin-left:0">
       i
       <div class="info-tooltip">
         <div class="info-tooltip-title">Shadow Approximations</div>
@@ -925,6 +916,22 @@
           <li>Very low sun angles (&lt;5°) are capped to avoid city-spanning shadows.</li>
         </ul>
       </div>
+    </div>
+    <div class="vr"></div>
+    <!-- Search embedded at right of bar -->
+    <div id="search-wrap">
+      <button id="search-toggle" title="Search">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M8.5 8.5L11.5 11.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <div id="search-inner">
+        <input id="search-inp" type="text" placeholder="Search place, address…" autocomplete="off" spellcheck="false">
+        <div id="search-spinner"></div>
+        <button id="search-clear">×</button>
+      </div>
+      <div id="search-results"></div>
     </div>
   </div>
 
@@ -1791,12 +1798,27 @@ window.addEventListener('resize', () => {
 
 // ── Search (Nominatim / OpenStreetMap) ─────────────────────
 (function() {
+  const wrap     = document.getElementById('search-wrap');
+  const toggleBtn= document.getElementById('search-toggle');
   const inp      = document.getElementById('search-inp');
   const results  = document.getElementById('search-results');
   const clearBtn = document.getElementById('search-clear');
   const spinner  = document.getElementById('search-spinner');
   let debounceTimer = null;
   let activeRequest = 0;
+
+  // Open/close the expanding input
+  toggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = wrap.classList.toggle('open');
+    if (isOpen) {
+      setTimeout(() => inp.focus(), 260);
+    } else {
+      inp.value = '';
+      clearBtn.style.display = 'none';
+      results.style.display = 'none';
+    }
+  });
 
   function showResults(items) {
     if (!items.length) {
@@ -1819,6 +1841,12 @@ window.addEventListener('resize', () => {
     inp.value = item.display_name.split(',')[0];
     results.style.display = 'none';
     clearBtn.style.display = 'inline';
+    // collapse after selecting
+    setTimeout(() => {
+      wrap.classList.remove('open');
+      inp.value = '';
+      clearBtn.style.display = 'none';
+    }, 800);
 
     const newLat = parseFloat(item.lat);
     const newLng = parseFloat(item.lon);
@@ -1868,7 +1896,11 @@ window.addEventListener('resize', () => {
   });
 
   inp.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { results.style.display = 'none'; inp.blur(); }
+    if (e.key === 'Escape') {
+      results.style.display = 'none';
+      wrap.classList.remove('open');
+      inp.value = '';
+    }
     if (e.key === 'Enter') { clearTimeout(debounceTimer); doSearch(inp.value); }
   });
 
@@ -1879,10 +1911,12 @@ window.addEventListener('resize', () => {
     inp.focus();
   });
 
-  // Close on outside click
   document.addEventListener('click', e => {
-    if (!document.getElementById('search-wrap').contains(e.target)) {
+    if (!wrap.contains(e.target)) {
       results.style.display = 'none';
+      if (wrap.classList.contains('open') && !inp.value) {
+        wrap.classList.remove('open');
+      }
     }
   });
 })();
