@@ -539,12 +539,186 @@
       flex-shrink: 0;
     }
 
+    /* ─── Search bar (top center) ──────────────────────────── */
+    #search-wrap {
+      position: absolute;
+      top: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: all;
+      width: 320px;
+      z-index: 40;
+    }
+
+    #search-row {
+      display: flex;
+      align-items: center;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(24px) saturate(1.2);
+      -webkit-backdrop-filter: blur(24px) saturate(1.2);
+      border-radius: 12px;
+      padding: 0 12px;
+      gap: 8px;
+      transition: border-color 0.2s;
+    }
+
+    #search-row:focus-within {
+      border-color: rgba(255,255,255,0.22);
+    }
+
+    #search-row svg { flex-shrink: 0; opacity: 0.4; }
+
+    #search-inp {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      padding: 10px 0;
+      letter-spacing: 0.02em;
+    }
+
+    #search-inp::placeholder { color: var(--muted); }
+
+    #search-clear {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 4px;
+      display: none;
+      line-height: 1;
+      font-size: 14px;
+    }
+
+    #search-clear:hover { color: var(--text); }
+
+    #search-results {
+      display: none;
+      margin-top: 6px;
+      background: rgba(8, 8, 12, 0.97);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 11px;
+      overflow: hidden;
+    }
+
+    .sr-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .sr-item:last-child { border-bottom: none; }
+
+    .sr-item:hover { background: rgba(255,255,255,0.07); }
+
+    .sr-name {
+      font-size: 12px;
+      color: var(--text);
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sr-detail {
+      font-size: 9.5px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sr-empty {
+      padding: 12px 14px;
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    #search-spinner {
+      display: none;
+      width: 12px; height: 12px;
+      border: 1.5px solid rgba(255,255,255,0.15);
+      border-top-color: var(--text);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── Mobile solar drawer ─────────────────────────────── */
+    #mobile-solar-btn {
+      display: none; /* only shown on mobile */
+      position: absolute;
+      top: 24px; right: 24px;
+      pointer-events: all;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-radius: 12px;
+      padding: 9px 14px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s, border-color 0.2s;
+      z-index: 30;
+    }
+
+    #mobile-solar-btn:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.18);
+    }
+
+    #mobile-solar-btn .msb-phase-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--accent-gold);
+      flex-shrink: 0;
+      transition: background 0.4s;
+    }
+
+    /* The drawer sits below the button */
+    #mobile-solar-drawer {
+      display: none; /* toggled by JS */
+      position: absolute;
+      top: 68px; right: 24px;
+      pointer-events: all;
+      background: rgba(8, 8, 12, 0.97);
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-radius: 14px;
+      padding: 18px 20px;
+      width: 230px;
+      z-index: 30;
+      animation: drawerSlide 0.22s ease;
+    }
+
+    @keyframes drawerSlide {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
     /* ─── Responsive ─────────────────────────────────────── */
     @media (max-width: 600px) {
       #controls { flex-wrap: wrap; gap: 14px; min-width: calc(100vw - 32px); justify-content: center; }
       .vr { display: none; }
-      #solar-panel { display: none; }
-      #light-times { display: none; }
+      #solar-panel { display: none !important; }
+      #light-times { display: none !important; }
+      #compass-wrap { display: none; }
+      #mobile-solar-btn { display: flex !important; }
     }
   </style>
 </head>
@@ -555,8 +729,22 @@
 
 <div id="ui">
 
-  <!-- Header -->
-  <div id="header"><h1>SunSeeker</h1></div>
+  <!-- Header (hidden on desktop – search takes its place) -->
+  <div id="header" style="display:none"><h1>SunSeeker</h1></div>
+
+  <!-- Search -->
+  <div id="search-wrap">
+    <div id="search-row">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+        <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.4"/>
+        <path d="M8.5 8.5L11.5 11.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+      <input id="search-inp" type="text" placeholder="Search a place, address, business…" autocomplete="off" spellcheck="false">
+      <div id="search-spinner"></div>
+      <button id="search-clear">×</button>
+    </div>
+    <div id="search-results"></div>
+  </div>
 
   <!-- Phase badge -->
   <div id="phase-badge">
@@ -592,6 +780,49 @@
     <div class="solar-row">
       <span class="solar-key">Golden Hr</span>
       <span class="solar-val" id="v-golden">—</span>
+    </div>
+  </div>
+
+  <!-- Mobile solar button + drawer -->
+  <button id="mobile-solar-btn">
+    <div class="msb-phase-dot" id="msb-dot"></div>
+    <span id="msb-label">Sun Info</span>
+    <svg id="msb-chevron" width="10" height="10" viewBox="0 0 10 10" fill="none" style="transition:transform 0.22s;margin-left:2px">
+      <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+  <div id="mobile-solar-drawer">
+    <div class="panel-label">Solar Position</div>
+    <div class="solar-row">
+      <span class="solar-key">Phase</span>
+      <span class="solar-val" id="mv-phase">—</span>
+    </div>
+    <div class="solar-row">
+      <span class="solar-key">Azimuth</span>
+      <span class="solar-val" id="mv-azimuth">—</span>
+    </div>
+    <div class="solar-row">
+      <span class="solar-key">Altitude</span>
+      <span class="solar-val" id="mv-altitude">—</span>
+    </div>
+    <div class="sep"></div>
+    <div class="solar-row">
+      <span class="solar-key">Sunrise</span>
+      <span class="solar-val" id="mv-sunrise">—</span>
+    </div>
+    <div class="solar-row">
+      <span class="solar-key">Sunset</span>
+      <span class="solar-val" id="mv-sunset">—</span>
+    </div>
+    <div class="sep"></div>
+    <div class="solar-row">
+      <span class="solar-key">Morning ✦</span>
+      <span class="solar-val" id="mv-golden-morn">—</span>
+    </div>
+    <div class="solar-row">
+      <span class="solar-key">Evening ✦</span>
+      <span class="solar-val" id="mv-golden-eve">—</span>
     </div>
   </div>
 
@@ -929,6 +1160,11 @@ function updateLightTimes(times, date) {
   document.getElementById('lt-golden-morn').className = 'lt-time' + (inGoldenMorn ? ' active' : '');
   document.getElementById('lt-golden-eve').className  = 'lt-time' + (inGoldenEve  ? ' active' : '');
 
+  // Sync to mobile drawer
+  const elM = (id, val) => { const e = document.getElementById(id); if(e) e.textContent = val; };
+  elM('mv-golden-morn', fmtRange(times.sunriseEnd, times.goldenHourEnd));
+  elM('mv-golden-eve',  fmtRange(times.goldenHour, times.sunsetStart));
+
   // ── Day arc bar ──────────────────────────────────────────
   // Span the bar from civil dawn to civil dusk
   const dayStart = ghMornStart && !isNaN(ghMornStart) ? ghMornStart : times.sunrise;
@@ -991,6 +1227,26 @@ function updateInfoPanel(altDeg, azDeg, phase, times) {
     ghStr = `${fmtTime(times.goldenHourEnd)} & ${fmtTime(times.goldenHour)}`;
   }
   document.getElementById('v-golden').textContent = ghStr;
+
+  // Sync mobile drawer
+  const isMobile = window.innerWidth <= 600;
+  if (isMobile) {
+    const mPhase = document.getElementById('mv-phase');
+    if (mPhase) {
+      mPhase.textContent = phase.abbr;
+      mPhase.style.color = phase.color;
+    }
+    const el = (id, val) => { const e = document.getElementById(id); if(e) e.textContent = val; };
+    el('mv-azimuth', `${azDeg.toFixed(1)}° ${azToCardinal(azDeg)}`);
+    el('mv-altitude', `${altDeg.toFixed(1)}°`);
+    el('mv-sunrise', fmtTime(times.sunrise));
+    el('mv-sunset',  fmtTime(times.sunset));
+    // update button label phase dot color
+    const dot = document.getElementById('msb-dot');
+    if (dot) dot.style.background = phase.color;
+    const lbl = document.getElementById('msb-label');
+    if (lbl) lbl.textContent = phase.abbr;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1009,19 +1265,95 @@ function updateBadge(phase) {
 /* ═══════════════════════════════════════════════════════
    MAP LIGHT
 ═══════════════════════════════════════════════════════ */
+/* ── Sky color keyframes keyed to solar altitude ──────────────
+   Each entry: [altDeg, [R,G,B], intensity]
+   Interpolated smoothly between adjacent entries.
+   Values based on atmospheric scattering physics:
+   - Deep night: near black
+   - Astronomical/nautical twilight: deep indigo
+   - Civil twilight / blue hour: rich cobalt-steel
+   - Sunrise/sunset: fiery amber-orange
+   - Golden hour: warm amber-gold
+   - Low sun (<20°): pale warm yellow
+   - High sun: near white with slight warmth
+────────────────────────────────────────────────────────── */
+const SKY_KEYS = [
+  [-18,  [  8,   8,  18], 0.08],  // deep night
+  [-12,  [ 14,  14,  42], 0.13],  // astronomical twilight
+  [ -6,  [ 22,  28,  80], 0.20],  // nautical twilight
+  [ -4,  [ 38,  52, 140], 0.28],  // civil twilight
+  [ -1,  [ 60,  90, 180], 0.38],  // blue hour peak
+  [  0,  [210, 100,  30], 0.55],  // exact horizon (sunrise/sunset)
+  [  2,  [230, 130,  20], 0.72],  // golden hour warm
+  [  5,  [220, 150,  40], 0.65],  // golden hour end
+  [ 10,  [210, 175,  90], 0.58],  // low warm sun
+  [ 20,  [220, 200, 150], 0.52],  // mid-morning/afternoon
+  [ 45,  [235, 220, 195], 0.46],  // daytime
+  [ 90,  [255, 248, 238], 0.42],  // high noon
+];
+
+function lerpSkyColor(altDeg) {
+  const keys = SKY_KEYS;
+  if (altDeg <= keys[0][0]) return { rgb: keys[0][1], intensity: keys[0][2] };
+  if (altDeg >= keys[keys.length-1][0]) {
+    const k = keys[keys.length-1];
+    return { rgb: k[1], intensity: k[2] };
+  }
+  for (let i = 0; i < keys.length - 1; i++) {
+    const [a0, c0, i0] = keys[i];
+    const [a1, c1, i1] = keys[i+1];
+    if (altDeg >= a0 && altDeg <= a1) {
+      const t = (altDeg - a0) / (a1 - a0);
+      const r = Math.round(c0[0] + (c1[0]-c0[0]) * t);
+      const g = Math.round(c0[1] + (c1[1]-c0[1]) * t);
+      const b = Math.round(c0[2] + (c1[2]-c0[2]) * t);
+      const intensity = i0 + (i1 - i0) * t;
+      return { rgb: [r,g,b], intensity };
+    }
+  }
+  return { rgb: [255,248,238], intensity: 0.42 };
+}
+
+function rgbToHex([r,g,b]) {
+  return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
+}
+
 function updateMapLight(altDeg, azDeg, phase) {
   if (!map.isStyleLoaded()) return;
 
-  // MapLibre light position: [radial, azimuthal_from_N_CW, polar_from_zenith]
   const polar = Math.max(1, Math.min(89, 90 - altDeg));
+  const { rgb, intensity } = lerpSkyColor(altDeg);
+  const hexColor = rgbToHex(rgb);
 
   try {
     map.setLight({
       anchor: 'map',
-      color: phase.lightColor,
-      intensity: phase.lightInt,
+      color: hexColor,
+      intensity,
       position: [1.5, azDeg, polar]
     });
+  } catch(e) {}
+
+  // Also tint the ray overlay canvas color to match sky
+  if (lastSunData) {
+    // update phase color for ray overlay to use interpolated color
+    lastSunData.skyHex = hexColor;
+  }
+
+  // Tint building extrusion to pick up warm/cool cast
+  // Blend building base color toward sky color slightly
+  try {
+    const bldR = Math.round(22 + (rgb[0]-128)*0.06);
+    const bldG = Math.round(22 + (rgb[1]-128)*0.06);
+    const bldB = Math.round(28 + (rgb[2]-128)*0.07);
+    const bldHex = rgbToHex([
+      Math.max(10, Math.min(80, bldR)),
+      Math.max(10, Math.min(80, bldG)),
+      Math.max(10, Math.min(90, bldB))
+    ]);
+    if (map.getLayer('ss-buildings')) {
+      map.setPaintProperty('ss-buildings', 'fill-extrusion-color', bldHex);
+    }
   } catch(e) {}
 }
 
@@ -1163,9 +1495,11 @@ function drawRayOverlay(azDeg, altDeg, phase) {
   const srcX = cx - Math.cos(rad) * dist * 0.9;
   const srcY = cy - Math.sin(rad) * dist * 0.9;
 
+  // Use the interpolated sky color if available
+  const rayHex = (lastSunData && lastSunData.skyHex) ? lastSunData.skyHex : phase.color;
   const grd = ctx.createRadialGradient(srcX, srcY, 0, srcX, srcY, dist * 1.1);
-  grd.addColorStop(0, phase.color + '28');
-  grd.addColorStop(0.4, phase.color + '0a');
+  grd.addColorStop(0, rayHex + '30');
+  grd.addColorStop(0.4, rayHex + '0c');
   grd.addColorStop(1, 'transparent');
 
   ctx.fillStyle = grd;
@@ -1429,6 +1763,129 @@ document.getElementById('locate-btn').addEventListener('click', () => {
 window.addEventListener('resize', () => {
   if (lastSunData) drawRayOverlay(lastSunData.azDeg, lastSunData.altDeg, lastSunData.phase);
 });
+
+// Mobile solar drawer toggle
+(function() {
+  const btn = document.getElementById('mobile-solar-btn');
+  const drawer = document.getElementById('mobile-solar-drawer');
+  const chevron = document.getElementById('msb-chevron');
+  if (!btn) return;
+  let open = false;
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    open = !open;
+    drawer.style.display = open ? 'block' : 'none';
+    chevron.style.transform = open ? 'rotate(180deg)' : '';
+  });
+
+  // Tap outside to close
+  document.addEventListener('click', (e) => {
+    if (open && !drawer.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+      open = false;
+      drawer.style.display = 'none';
+      chevron.style.transform = '';
+    }
+  });
+})();
+
+// ── Search (Nominatim / OpenStreetMap) ─────────────────────
+(function() {
+  const inp      = document.getElementById('search-inp');
+  const results  = document.getElementById('search-results');
+  const clearBtn = document.getElementById('search-clear');
+  const spinner  = document.getElementById('search-spinner');
+  let debounceTimer = null;
+  let activeRequest = 0;
+
+  function showResults(items) {
+    if (!items.length) {
+      results.innerHTML = '<div class="sr-empty">No results found</div>';
+    } else {
+      results.innerHTML = items.slice(0, 6).map((item, i) =>
+        `<div class="sr-item" data-i="${i}">
+          <div class="sr-name">${escHtml(item.display_name.split(',')[0])}</div>
+          <div class="sr-detail">${escHtml(item.display_name.split(',').slice(1,4).join(',').trim())}</div>
+        </div>`
+      ).join('');
+      results.querySelectorAll('.sr-item').forEach((el, i) => {
+        el.addEventListener('click', () => selectResult(items[i]));
+      });
+    }
+    results.style.display = 'block';
+  }
+
+  function selectResult(item) {
+    inp.value = item.display_name.split(',')[0];
+    results.style.display = 'none';
+    clearBtn.style.display = 'inline';
+
+    const newLat = parseFloat(item.lat);
+    const newLng = parseFloat(item.lon);
+    lat = newLat; lng = newLng;
+
+    const bbox = item.boundingbox;
+    if (bbox) {
+      map.fitBounds([
+        [parseFloat(bbox[2]), parseFloat(bbox[0])],
+        [parseFloat(bbox[3]), parseFloat(bbox[1])]
+      ], { padding: 80, maxZoom: 17, duration: 1400, pitch: 52 });
+    } else {
+      map.flyTo({ center: [newLng, newLat], zoom: 16, pitch: 52, duration: 1400 });
+    }
+    setTimeout(updateAll, 300);
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  async function doSearch(q) {
+    if (!q.trim()) { results.style.display = 'none'; return; }
+    const reqId = ++activeRequest;
+    spinner.style.display = 'block';
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=6&addressdetails=0`;
+      const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+      if (reqId !== activeRequest) return;
+      const data = await res.json();
+      showResults(data);
+    } catch(e) {
+      if (reqId === activeRequest) {
+        results.innerHTML = '<div class="sr-empty">Search unavailable</div>';
+        results.style.display = 'block';
+      }
+    } finally {
+      if (reqId === activeRequest) spinner.style.display = 'none';
+    }
+  }
+
+  inp.addEventListener('input', () => {
+    clearBtn.style.display = inp.value ? 'inline' : 'none';
+    clearTimeout(debounceTimer);
+    if (!inp.value.trim()) { results.style.display = 'none'; return; }
+    debounceTimer = setTimeout(() => doSearch(inp.value), 380);
+  });
+
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { results.style.display = 'none'; inp.blur(); }
+    if (e.key === 'Enter') { clearTimeout(debounceTimer); doSearch(inp.value); }
+  });
+
+  clearBtn.addEventListener('click', () => {
+    inp.value = '';
+    clearBtn.style.display = 'none';
+    results.style.display = 'none';
+    inp.focus();
+  });
+
+  // Close on outside click
+  document.addEventListener('click', e => {
+    if (!document.getElementById('search-wrap').contains(e.target)) {
+      results.style.display = 'none';
+    }
+  });
+})();
 
 // Auto-tick every 60s if user hasn't changed time
 let autoTick = true;
