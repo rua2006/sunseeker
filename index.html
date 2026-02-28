@@ -177,11 +177,32 @@
       position: absolute;
       bottom: 132px;
       right: 24px;
-      pointer-events: none;
+      pointer-events: all;
+      cursor: grab;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #compass-wrap.dragging {
+      cursor: grabbing;
     }
 
     #compass-wrap canvas {
       display: block;
+    }
+
+    #compass-hint {
+      text-align: center;
+      font-size: 8px;
+      letter-spacing: 0.12em;
+      color: rgba(237,232,223,0.25);
+      margin-top: 5px;
+      text-transform: uppercase;
+      transition: opacity 0.3s;
+    }
+
+    #compass-wrap:hover #compass-hint {
+      color: rgba(237,232,223,0.45);
     }
 
     /* ─── Controls bar (bottom center) ──────────────────────── */
@@ -279,11 +300,251 @@
       opacity: 0.4;
     }
 
+    /* ─── Light Times Panel (left side) ─────────────────── */
+    #light-times {
+      position: absolute;
+      left: 24px;
+      bottom: 28px;
+      pointer-events: none;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(24px) saturate(1.2);
+      -webkit-backdrop-filter: blur(24px) saturate(1.2);
+      border-radius: 13px;
+      padding: 16px 18px;
+      width: 220px;
+    }
+
+    #light-times .panel-label {
+      margin-bottom: 12px;
+    }
+
+    .lt-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 5px 0;
+    }
+
+    .lt-row + .lt-row {
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .lt-swatch {
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .lt-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .lt-name {
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+
+    .lt-time {
+      font-size: 12.5px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .lt-time.active {
+      color: #f0bf55;
+      text-shadow: 0 0 12px rgba(232,160,32,0.4);
+    }
+
+    /* Day arc bar at bottom of panel */
+    #day-arc-wrap {
+      margin-top: 13px;
+      padding-top: 11px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    #day-arc-label {
+      font-size: 8px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 7px;
+    }
+
+    #day-arc-bar {
+      position: relative;
+      height: 8px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.05);
+      overflow: visible;
+    }
+
+    .arc-seg {
+      position: absolute;
+      top: 0; height: 100%;
+      border-radius: 4px;
+      transition: left 0.5s ease, width 0.5s ease;
+    }
+
+    #arc-cursor {
+      position: absolute;
+      top: -4px;
+      width: 3px;
+      height: 16px;
+      border-radius: 2px;
+      background: white;
+      box-shadow: 0 0 6px rgba(255,255,255,0.6);
+      transform: translateX(-50%);
+      transition: left 0.5s ease;
+      z-index: 2;
+    }
+
+    /* ─── Info tooltip ─────────────────────────────────────── */
+    .info-badge {
+      pointer-events: all;
+      position: relative;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.06);
+      color: var(--muted);
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 12px;
+      line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      cursor: default;
+      flex-shrink: 0;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .info-badge:hover {
+      border-color: rgba(255,255,255,0.35);
+      color: var(--text);
+    }
+
+    .info-tooltip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 10px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 230px;
+      background: rgba(8, 8, 12, 0.96);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 13px 15px;
+      font-family: 'DM Mono', monospace;
+      font-size: 10.5px;
+      line-height: 1.65;
+      color: rgba(237,232,223,0.7);
+      pointer-events: none;
+      z-index: 100;
+      text-align: left;
+      white-space: normal;
+    }
+
+    .info-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: rgba(255,255,255,0.1);
+    }
+
+    .info-tooltip::before {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: rgba(8,8,12,0.96);
+      z-index: 1;
+    }
+
+    .info-tooltip-title {
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(237,232,223,0.35);
+      margin-bottom: 8px;
+    }
+
+    .info-tooltip ul {
+      padding-left: 14px;
+      margin: 0;
+    }
+
+    .info-tooltip li {
+      margin-bottom: 5px;
+      padding-left: 2px;
+    }
+
+    .info-tooltip li:last-child { margin-bottom: 0; }
+
+    .info-badge:hover .info-tooltip {
+      display: block;
+    }
+
+    /* ─── Shadow toggle button ─────────────────────────────── */
+    #shadow-btn {
+      pointer-events: all;
+      background: rgba(255,255,255,0.055);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      padding: 8px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      opacity: 0.5;
+    }
+
+    #shadow-btn:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.18);
+    }
+
+    #shadow-btn.active {
+      background: rgba(0, 0, 0, 0.25);
+      border-color: rgba(180, 180, 220, 0.35);
+      color: #c8d8ff;
+      opacity: 1;
+    }
+
+    #shadow-btn .btn-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.6;
+      flex-shrink: 0;
+    }
+
     /* ─── Responsive ─────────────────────────────────────── */
     @media (max-width: 600px) {
       #controls { flex-wrap: wrap; gap: 14px; min-width: calc(100vw - 32px); justify-content: center; }
       .vr { display: none; }
       #solar-panel { display: none; }
+      #light-times { display: none; }
     }
   </style>
 </head>
@@ -337,6 +598,64 @@
   <!-- Compass -->
   <div id="compass-wrap">
     <canvas id="compass" width="110" height="110"></canvas>
+    <div id="compass-hint">drag to rotate</div>
+  </div>
+
+  <!-- Light Times Panel -->
+  <div id="light-times">
+    <div class="panel-label">Today's Light</div>
+
+    <div class="lt-row">
+      <div class="lt-swatch" style="background:rgba(255,170,80,0.12)">🌅</div>
+      <div class="lt-info">
+        <div class="lt-name">Sunrise</div>
+        <div class="lt-time" id="lt-sunrise">—</div>
+      </div>
+    </div>
+
+    <div class="lt-row">
+      <div class="lt-swatch" style="background:rgba(232,160,32,0.14)">✦</div>
+      <div class="lt-info">
+        <div class="lt-name">Morning Golden Hr</div>
+        <div class="lt-time" id="lt-golden-morn">—</div>
+      </div>
+    </div>
+
+    <div class="lt-row">
+      <div class="lt-swatch" style="background:rgba(91,159,245,0.12)">◑</div>
+      <div class="lt-info">
+        <div class="lt-name">Solar Noon</div>
+        <div class="lt-time" id="lt-noon">—</div>
+      </div>
+    </div>
+
+    <div class="lt-row">
+      <div class="lt-swatch" style="background:rgba(232,160,32,0.14)">✦</div>
+      <div class="lt-info">
+        <div class="lt-name">Evening Golden Hr</div>
+        <div class="lt-time" id="lt-golden-eve">—</div>
+      </div>
+    </div>
+
+    <div class="lt-row">
+      <div class="lt-swatch" style="background:rgba(100,100,180,0.14)">🌇</div>
+      <div class="lt-info">
+        <div class="lt-name">Sunset</div>
+        <div class="lt-time" id="lt-sunset">—</div>
+      </div>
+    </div>
+
+    <div id="day-arc-wrap">
+      <div id="day-arc-label">Daylight Span</div>
+      <div id="day-arc-bar">
+        <div class="arc-seg" id="arc-blue-morn"  style="background:rgba(91,159,245,0.55)"></div>
+        <div class="arc-seg" id="arc-golden-morn" style="background:rgba(232,160,32,0.75)"></div>
+        <div class="arc-seg" id="arc-day"         style="background:rgba(255,245,200,0.2)"></div>
+        <div class="arc-seg" id="arc-golden-eve"  style="background:rgba(232,160,32,0.75)"></div>
+        <div class="arc-seg" id="arc-blue-eve"    style="background:rgba(91,159,245,0.55)"></div>
+        <div id="arc-cursor"></div>
+      </div>
+    </div>
   </div>
 
   <!-- Controls -->
@@ -359,6 +678,23 @@
       </svg>
       My Location
     </button>
+    <div class="vr"></div>
+    <button id="shadow-btn">
+      <div class="btn-dot"></div>
+      Cast Shadows
+    </button>
+    <div class="info-badge">
+      i
+      <div class="info-tooltip">
+        <div class="info-tooltip-title">Shadow Approximations</div>
+        <ul>
+          <li>Shadows use convex hull outlines, so concave or L-shaped buildings cast slightly oversized shadows.</li>
+          <li>Buildings don't block each other — overlapping shadows stack rather than merge.</li>
+          <li>Heights come from map tile data, which may be missing or estimated for some buildings.</li>
+          <li>Very low sun angles (&lt;5°) are capped to avoid city-spanning shadows.</li>
+        </ul>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -371,6 +707,8 @@ window.addEventListener('load', function() {
 let map;
 let lat = 40.7484, lng = -73.9967; // Default: Midtown NYC
 let lastSunData = null;
+let shadowsEnabled = false;
+let shadowUpdateTimer = null;
 
 /* ═══════════════════════════════════════════════════════
    DATE / TIME INIT
@@ -555,11 +893,78 @@ function updateAll() {
   const phase = getSunPhase(altDeg);
   lastSunData = { altDeg, azDeg, phase, times, date };
 
+  updateLightTimes(times, date);
   updateInfoPanel(altDeg, azDeg, phase, times);
   updateBadge(phase);
   updateMapLight(altDeg, azDeg, phase);
   drawCompass(azDeg, altDeg, phase);
   drawRayOverlay(azDeg, altDeg, phase);
+  scheduleShadowUpdate(azDeg, altDeg);
+}
+
+/* ═══════════════════════════════════════════════════════
+   LIGHT TIMES PANEL
+═══════════════════════════════════════════════════════ */
+function updateLightTimes(times, date) {
+  const ghMornStart = times.dawn;          // civil dawn ~ blue hour start
+  const ghMornEnd   = times.goldenHourEnd; // golden hour ends in morning
+  const ghEveStart  = times.goldenHour;    // golden hour starts in evening
+  const ghEveEnd    = times.dusk;          // civil dusk ~ blue hour end
+
+  const fmtRange = (a, b) => {
+    if (!a || !b || isNaN(a.getTime()) || isNaN(b.getTime())) return '—';
+    return fmtTime(a) + ' – ' + fmtTime(b);
+  };
+
+  document.getElementById('lt-sunrise').textContent = fmtTime(times.sunrise);
+  document.getElementById('lt-golden-morn').textContent = fmtRange(times.sunriseEnd, times.goldenHourEnd);
+  document.getElementById('lt-noon').textContent = fmtTime(times.solarNoon);
+  document.getElementById('lt-golden-eve').textContent = fmtRange(times.goldenHour, times.sunsetStart);
+  document.getElementById('lt-sunset').textContent = fmtTime(times.sunset);
+
+  // Highlight currently active row
+  const now = date;
+  const inGoldenMorn = now >= times.sunriseEnd && now <= times.goldenHourEnd;
+  const inGoldenEve  = now >= times.goldenHour  && now <= times.sunsetStart;
+  document.getElementById('lt-golden-morn').className = 'lt-time' + (inGoldenMorn ? ' active' : '');
+  document.getElementById('lt-golden-eve').className  = 'lt-time' + (inGoldenEve  ? ' active' : '');
+
+  // ── Day arc bar ──────────────────────────────────────────
+  // Span the bar from civil dawn to civil dusk
+  const dayStart = ghMornStart && !isNaN(ghMornStart) ? ghMornStart : times.sunrise;
+  const dayEnd   = ghEveEnd    && !isNaN(ghEveEnd)    ? ghEveEnd   : times.sunset;
+  if (!dayStart || !dayEnd || isNaN(dayStart) || isNaN(dayEnd)) return;
+
+  const span = dayEnd - dayStart;
+  const pct = t => {
+    if (!t || isNaN(t.getTime())) return null;
+    return Math.max(0, Math.min(100, (t - dayStart) / span * 100));
+  };
+
+  const seg = (id, from, to) => {
+    const el = document.getElementById(id);
+    const f = pct(from), t = pct(to);
+    if (f === null || t === null) { el.style.display = 'none'; return; }
+    el.style.display = '';
+    el.style.left  = f + '%';
+    el.style.width = Math.max(0, t - f) + '%';
+  };
+
+  seg('arc-blue-morn',   times.dawn,        times.sunrise);
+  seg('arc-golden-morn', times.sunriseEnd,   times.goldenHourEnd);
+  seg('arc-day',         times.goldenHourEnd, times.goldenHour);
+  seg('arc-golden-eve',  times.goldenHour,   times.sunsetStart);
+  seg('arc-blue-eve',    times.sunset,       times.dusk);
+
+  // Cursor = current time position
+  const cursorPct = pct(now);
+  const cursor = document.getElementById('arc-cursor');
+  if (cursorPct !== null) {
+    cursor.style.display = '';
+    cursor.style.left = cursorPct + '%';
+  } else {
+    cursor.style.display = 'none';
+  }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -629,6 +1034,7 @@ function drawCompass(azDeg, altDeg, phase) {
   const W = canvas.width, H = canvas.height;
   const cx = W / 2, cy = H / 2;
   const R = cx - 6;
+  const bearing = map.getBearing(); // current map rotation
 
   ctx.clearRect(0, 0, W, H);
 
@@ -641,9 +1047,9 @@ function drawCompass(azDeg, altDeg, phase) {
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  // Tick marks
+  // Tick marks — rotated by bearing so N tracks true north
   for (let i = 0; i < 36; i++) {
-    const a = (i / 36) * Math.PI * 2 - Math.PI / 2;
+    const a = (i / 36) * Math.PI * 2 - Math.PI / 2 - bearing * Math.PI / 180;
     const isMain = i % 9 === 0;
     const r0 = R - (isMain ? 8 : 4);
     ctx.beginPath();
@@ -654,18 +1060,18 @@ function drawCompass(azDeg, altDeg, phase) {
     ctx.stroke();
   }
 
-  // Cardinal labels
+  // Cardinal labels — also rotated
   ctx.font = '9px "DM Mono"';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   [['N', 0], ['E', 90], ['S', 180], ['W', 270]].forEach(([l, deg]) => {
-    const a = (deg - 90) * Math.PI / 180;
-    ctx.fillStyle = l === 'N' ? 'rgba(220,80,80,0.8)' : 'rgba(255,255,255,0.3)';
+    const a = (deg - 90 - bearing) * Math.PI / 180;
+    ctx.fillStyle = l === 'N' ? 'rgba(220,80,80,0.9)' : 'rgba(255,255,255,0.35)';
     ctx.fillText(l, cx + (R - 16) * Math.cos(a), cy + (R - 16) * Math.sin(a));
   });
 
-  // Sun beam gradient
-  const sunRad = (azDeg - 90) * Math.PI / 180;
+  // Sun beam gradient — sun position in compass space accounts for bearing
+  const sunRad = (azDeg - bearing - 90) * Math.PI / 180;
   const beamLen = R - 24;
   const sunX = cx + beamLen * Math.cos(sunRad);
   const sunY = cy + beamLen * Math.sin(sunRad);
@@ -767,14 +1173,245 @@ function drawRayOverlay(azDeg, altDeg, phase) {
 }
 
 /* ═══════════════════════════════════════════════════════
+   CAST SHADOW ENGINE
+═══════════════════════════════════════════════════════ */
+
+// Debounce helper – avoids hammering on every map move
+function scheduleShadowUpdate(azDeg, altDeg) {
+  if (!shadowsEnabled) return;
+  clearTimeout(shadowUpdateTimer);
+  shadowUpdateTimer = setTimeout(() => computeAndRenderShadows(azDeg, altDeg), 180);
+}
+
+function clearShadowLayer() {
+  if (map.getLayer('ss-shadow-layer')) map.removeLayer('ss-shadow-layer');
+  if (map.getSource('ss-shadows'))     map.removeSource('ss-shadows');
+}
+
+function computeAndRenderShadows(azDeg, altDeg) {
+  if (!shadowsEnabled || !map.isStyleLoaded()) return;
+
+  // Sun below horizon or essentially overhead → no useful cast shadows
+  if (altDeg <= 1 || altDeg >= 80) { clearShadowLayer(); return; }
+
+  const altRad = altDeg * Math.PI / 180;
+  const azRad  = azDeg  * Math.PI / 180;
+
+  // How many metres of shadow per metre of building height
+  // Cap at 30× so very-low sun doesn't create absurd city-spanning shadows
+  const shadowScale = Math.min(1 / Math.tan(altRad), 30);
+
+  // Shadow direction: opposite the sun azimuth
+  // azimuth 0=N,90=E,180=S,270=W  →  sin/cos give east/north components
+  const shadowDxMetresPerM = -Math.sin(azRad) * shadowScale;
+  const shadowDyMetresPerM = -Math.cos(azRad) * shadowScale;
+
+  // Metres → degrees (approx, good enough at city scale)
+  const cosLat = Math.cos(lat * Math.PI / 180);
+  const mPerDegLat = 111320;
+  const mPerDegLng = 111320 * cosLat;
+
+  // Query all visible building features
+  let features = [];
+  try {
+    features = map.queryRenderedFeatures({ layers: ['ss-buildings'] });
+  } catch(e) { return; }
+
+  if (!features.length) { clearShadowLayer(); return; }
+
+  // Deduplicate by a simple id (queryRenderedFeatures can return duplicates)
+  const seen = new Set();
+  const unique = features.filter(f => {
+    const id = JSON.stringify(f.geometry.coordinates[0] && f.geometry.coordinates[0][0]);
+    if (seen.has(id)) return false;
+    seen.add(id); return true;
+  });
+
+  const shadowFeatures = [];
+
+  for (const feature of unique) {
+    const geom = feature.geometry;
+    if (geom.type !== 'Polygon' && geom.type !== 'MultiPolygon') continue;
+
+    const h = parseFloat(
+      feature.properties.render_height ||
+      feature.properties.height ||
+      feature.properties.building_height || 4
+    );
+    if (!h || h <= 0) continue;
+
+    // Shadow offset in degrees for this building
+    const dLng = shadowDxMetresPerM * h / mPerDegLng;
+    const dLat = shadowDyMetresPerM * h / mPerDegLat;
+
+    const rings = geom.type === 'Polygon'
+      ? [geom.coordinates]
+      : geom.coordinates;
+
+    for (const polygon of rings) {
+      if (!polygon || !polygon[0]) continue;
+      const outer = polygon[0];
+
+      // Build the swept shadow shape:
+      // convex hull of (original footprint ∪ offset footprint)
+      const pts = [];
+      for (const [x, y] of outer) {
+        pts.push([x,       y      ]);   // original vertex
+        pts.push([x + dLng, y + dLat]); // offset vertex
+      }
+
+      const hull = convexHull(pts);
+      if (hull.length < 4) continue;
+
+      shadowFeatures.push({
+        type: 'Feature',
+        geometry: { type: 'Polygon', coordinates: [hull] },
+        properties: { h }
+      });
+    }
+  }
+
+  const geojson = { type: 'FeatureCollection', features: shadowFeatures };
+
+  // Shadow opacity: stronger when sun is low (golden hour), fade toward noon
+  const opacity = Math.max(0.12, Math.min(0.42, 0.42 - (altDeg - 5) * 0.008));
+
+  if (map.getSource('ss-shadows')) {
+    map.getSource('ss-shadows').setData(geojson);
+    map.setPaintProperty('ss-shadow-layer', 'fill-opacity', opacity);
+  } else {
+    map.addSource('ss-shadows', { type: 'geojson', data: geojson });
+    // Insert BELOW building layer so shadows sit on the ground
+    const beforeLayer = map.getLayer('ss-buildings') ? 'ss-buildings' : undefined;
+    map.addLayer({
+      id: 'ss-shadow-layer',
+      type: 'fill',
+      source: 'ss-shadows',
+      paint: {
+        'fill-color': '#000820',
+        'fill-opacity': opacity,
+        'fill-antialias': true
+      }
+    }, beforeLayer);
+  }
+}
+
+/* Convex hull (gift-wrapping / Jarvis march) ─────────────── */
+function convexHull(points) {
+  const n = points.length;
+  if (n < 3) { const r = [...points]; r.push(r[0]); return r; }
+
+  // Find leftmost point
+  let start = 0;
+  for (let i = 1; i < n; i++) {
+    if (points[i][0] < points[start][0] ||
+        (points[i][0] === points[start][0] && points[i][1] < points[start][1])) {
+      start = i;
+    }
+  }
+
+  const hull = [];
+  let cur = start;
+  let iters = 0;
+  do {
+    hull.push(points[cur]);
+    let next = (cur + 1) % n;
+    for (let i = 0; i < n; i++) {
+      const cross =
+        (points[next][0] - points[cur][0]) * (points[i][1] - points[cur][1]) -
+        (points[next][1] - points[cur][1]) * (points[i][0] - points[cur][0]);
+      if (cross < 0) next = i;
+    }
+    cur = next;
+    iters++;
+  } while (cur !== start && iters <= n + 2);
+
+  hull.push(hull[0]); // close ring
+  return hull;
+}
+
+/* ═══════════════════════════════════════════════════════
    EVENTS
 ═══════════════════════════════════════════════════════ */
 document.getElementById('inp-date').addEventListener('input', updateAll);
 document.getElementById('inp-time').addEventListener('input', updateAll);
 
 map.on('rotate', () => {
-  if (lastSunData) drawRayOverlay(lastSunData.azDeg, lastSunData.altDeg, lastSunData.phase);
+  if (lastSunData) {
+    drawCompass(lastSunData.azDeg, lastSunData.altDeg, lastSunData.phase);
+    drawRayOverlay(lastSunData.azDeg, lastSunData.altDeg, lastSunData.phase);
+  }
 });
+
+map.on('moveend', () => {
+  if (lastSunData && shadowsEnabled) {
+    scheduleShadowUpdate(lastSunData.azDeg, lastSunData.altDeg);
+  }
+});
+
+document.getElementById('shadow-btn').addEventListener('click', () => {
+  shadowsEnabled = !shadowsEnabled;
+  const btn = document.getElementById('shadow-btn');
+  btn.classList.toggle('active', shadowsEnabled);
+  if (shadowsEnabled && lastSunData) {
+    scheduleShadowUpdate(lastSunData.azDeg, lastSunData.altDeg);
+  } else {
+    clearShadowLayer();
+  }
+});
+
+/* ── Compass drag-to-rotate ─────────────────────────── */
+(function() {
+  const wrap = document.getElementById('compass-wrap');
+  const canvas = document.getElementById('compass');
+  let dragging = false;
+  let lastAngle = null;
+
+  function getAngle(e, rect) {
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const dx = clientX - (rect.left + rect.width / 2);
+    const dy = clientY - (rect.top + rect.height / 2);
+    return Math.atan2(dy, dx) * 180 / Math.PI;
+  }
+
+  function onStart(e) {
+    e.preventDefault();
+    dragging = true;
+    wrap.classList.add('dragging');
+    lastAngle = getAngle(e, canvas.getBoundingClientRect());
+  }
+
+  function onMove(e) {
+    if (!dragging) return;
+    e.preventDefault();
+    const angle = getAngle(e, canvas.getBoundingClientRect());
+    let delta = angle - lastAngle;
+    // Normalize to [-180, 180]
+    if (delta > 180)  delta -= 360;
+    if (delta < -180) delta += 360;
+    lastAngle = angle;
+    map.setBearing(map.getBearing() + delta);
+  }
+
+  function onEnd() {
+    dragging = false;
+    wrap.classList.remove('dragging');
+    lastAngle = null;
+  }
+
+  canvas.addEventListener('mousedown',  onStart, { passive: false });
+  canvas.addEventListener('touchstart', onStart, { passive: false });
+  window.addEventListener('mousemove',  onMove,  { passive: false });
+  window.addEventListener('touchmove',  onMove,  { passive: false });
+  window.addEventListener('mouseup',   onEnd);
+  window.addEventListener('touchend',  onEnd);
+
+  // Double-click to reset north
+  canvas.addEventListener('dblclick', () => {
+    map.easeTo({ bearing: 0, duration: 400 });
+  });
+})();
 
 document.getElementById('locate-btn').addEventListener('click', () => {
   if (!navigator.geolocation) return;
