@@ -288,6 +288,17 @@
       transition: opacity 0.8s;
     }
 
+    /* ─── Night darkness overlay ─────────────────────────── */
+    #night-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, #050814 0%, #020510 100%);
+      opacity: 0;
+      transition: opacity 1.4s ease;
+      z-index: 1; /* above map, below UI */
+    }
+
     /* ─── Map attribution override ───────────────────────── */
     .maplibregl-ctrl-attrib {
       font-size: 9px !important;
@@ -722,6 +733,7 @@
 
 <div id="map"></div>
 <canvas id="ray-canvas"></canvas>
+<div id="night-overlay"></div>
 
 <div id="ui">
 
@@ -1096,6 +1108,11 @@ function updateAll() {
   updateMapLight(altDeg, azDeg, phase);
   drawCompass(azDeg, altDeg, phase);
   drawRayOverlay(azDeg, altDeg, phase);
+
+  // After setLight triggers a repaint, wait for idle so queryRenderedFeatures
+  // hits a fully-painted frame before recomputing shadows.
+  clearTimeout(shadowUpdateTimer);
+  map.once('idle', () => computeAndRenderShadows(azDeg, altDeg));
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1313,7 +1330,6 @@ function updateMapLight(altDeg, azDeg, phase) {
   }
 
   // Tint building extrusion to pick up warm/cool cast
-  // Blend building base color toward sky color slightly
   try {
     const bldR = Math.round(22 + (rgb[0]-128)*0.06);
     const bldG = Math.round(22 + (rgb[1]-128)*0.06);
@@ -1327,6 +1343,12 @@ function updateMapLight(altDeg, azDeg, phase) {
       map.setPaintProperty('ss-buildings', 'fill-extrusion-color', bldHex);
     }
   } catch(e) {}
+
+  // Night overlay: fades in smoothly as sun drops below -6°
+  // 0 at civil dusk (-6°), peaks at ~0.62 for deep night (-18°+)
+  const nightOpacity = altDeg >= -6 ? 0
+    : Math.min(0.62, (-6 - altDeg) / 12 * 0.62);
+  document.getElementById('night-overlay').style.opacity = nightOpacity;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1801,7 +1823,7 @@ window.addEventListener('resize', () => {
       results.innerHTML = items.slice(0, 6).map((item, i) =>
         `<div class="sr-item" data-i="${i}">
           <div class="sr-name">${escHtml(item.display_name.split(',')[0])}</div>
-          <div class="sr-detail">${escHtml(item.display_name.split(',').slice(1,4).join(',').trim())}</div>
+          <div class="sr-detail">${escHtml([item.type !== item.class ? item.type : null, ...item.display_name.split(',').slice(1,3)].filter(Boolean).join(', ').trim())}</div>
         </div>`
       ).join('');
       results.querySelectorAll('.sr-item').forEach((el, i) => {
@@ -1847,7 +1869,12 @@ window.addEventListener('resize', () => {
     const reqId = ++activeRequest;
     spinner.style.display = 'block';
     try {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=6&addressdetails=0`;
+      // Build a ~5 km viewbox around current map center to bias local results
+      const latOff = 0.045; // ~5 km in lat degrees
+      const lngOff = 0.055; // ~5 km in lng degrees (mid-lat approx)
+      const vbox = `${lng - lngOff},${lat - latOff},${lng + lngOff},${lat + latOff}`;
+      // bounded=0 means prefer local but fall back globally if nothing found
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=10&addressdetails=1&viewbox=${vbox}&bounded=0`;
       const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
       if (reqId !== activeRequest) return;
       const data = await res.json();
